@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Blog CMS</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { display: flex; height: 100vh; background: #f8f8fc; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background: #fff;
+      border-right: 1px solid #ddd;
+      padding: 20px;
+    }
+    .sidebar h2 { font-size: 20px; margin-bottom: 10px; }
+    .sidebar p { color: #888; font-size: 14px; margin-bottom: 20px; }
+    .block {
+      background: #f9f9ff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .block img { width: 24px; height: 24px; }
+    .block h3 { font-size: 16px; margin-bottom: 3px; }
+    .block p { font-size: 12px; color: #666; margin: 0; }
+    .quick-tips { margin-top: 30px; }
+    .quick-tips h4 { font-size: 14px; margin-bottom: 10px; }
+    .quick-tips ul { list-style: none; }
+    .quick-tips li { font-size: 12px; margin-bottom: 6px; color: #666; }
+
+    /* Editor */
+    .editor {
+      flex: 1;
+      padding: 80px 40px 40px;
+      background: #f8f8fc;
+      text-align: center;
+      overflow-y: auto;
+    }
+    .placeholder { color: #666; font-size: 16px; }
+    .editor .emoji { font-size: 40px; margin-bottom: 15px; }
+
+    /* Editable blocks */
+    .editor h2, .editor p { margin: 10px 0; padding: 8px; border: 1px dashed transparent; }
+    .editor h2:hover, .editor p:hover { border-color: #9b5de5; background: #f3ecff; }
+    .editor img { max-width: 100%; margin: 15px 0; border-radius: 8px; }
+
+    /* Top Bar */
+    .topbar {
+      position: absolute;
+      top: 0;
+      left: 250px;
+      right: 0;
+      background: #fff;
+      height: 60px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      gap: 20px;
+    }
+    .topbar a { text-decoration: none; color: #555; font-size: 16px; }
+    .publish-btn {
+      background: #9b5de5;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(155,93,229,0.4);
+    }
+    .publish-btn:hover { background: #884ed1; }
+
+    /* Preview modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      justify-content: center; align-items: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      width: 80%;
+      max-height: 80%;
+      overflow-y: auto;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Blog CMS</h2>
+    <p>Drag & drop to build your content</p>
+    <div class="block" draggable="true" data-type="heading">
+      <img src="https://img.icons8.com/ios-filled/50/000000/header.png" alt="Heading">
+      <div><h3>Heading</h3><p>Add section headings</p></div>
+    </div>
+    <div class="block" draggable="true" data-type="paragraph">
+      <img src="https://img.icons8.com/ios-filled/50/000000/edit.png" alt="Paragraph">
+      <div><h3>Paragraph</h3><p>Write your content</p></div>
+    </div>
+    <div class="block" draggable="true" data-type="image">
+      <img src="https://img.icons8.com/ios-filled/50/000000/picture.png" alt="Image">
+      <div><h3>Image</h3><p>Insert images</p></div>
+    </div>
+    <div class="quick-tips">
+      <h4>Quick Tips</h4>
+      <ul>
+        <li>• Drag blocks to the editor</li>
+        <li>• Click to edit content</li>
+        <li>• Drag to reorder blocks</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Editor -->
+  <div class="editor" id="editor">
+    <div class="emoji">✨</div>
+    <h2 class="placeholder">Start creating!</h2>
+    <p class="placeholder">Drag content blocks from the sidebar to build your blog post</p>
+  </div>
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <a href="#" id="previewBtn">Preview</a>
+    <button class="publish-btn" id="publishBtn">Publish</button>
+  </div>
+
+  <!-- Preview Modal -->
+  <div class="modal" id="previewModal">
+    <div class="modal-content" id="modalContent"></div>
+  </div>
+
+<script>
+  const blocks = document.querySelectorAll(".block");
+  const editor = document.getElementById("editor");
+  const previewBtn = document.getElementById("previewBtn");
+  const publishBtn = document.getElementById("publishBtn");
+  const modal = document.getElementById("previewModal");
+  const modalContent = document.getElementById("modalContent");
+
+  // Drag & Drop
+  blocks.forEach(block => {
+    block.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("type", block.dataset.type);
+    });
+  });
+
+  editor.addEventListener("dragover", e => e.preventDefault());
+  editor.addEventListener("drop", e => {
+    e.preventDefault();
+    const type = e.dataTransfer.getData("type");
+    let newElement;
+    if (type === "heading") {
+      newElement = document.createElement("h2");
+      newElement.textContent = "New Heading";
+    } else if (type === "paragraph") {
+      newElement = document.createElement("p");
+      newElement.textContent = "New paragraph content...";
+    } else if (type === "image") {
+      newElement = document.createElement("img");
+      newElement.src = prompt("Enter image URL:");
+    }
+    newElement.contentEditable = type !== "image";
+    editor.appendChild(newElement);
+    removePlaceholders();
+  });
+
+  function removePlaceholders() {
+    document.querySelectorAll(".placeholder").forEach(p => p.remove());
+  }
+
+  // Preview & Publish
+  previewBtn.addEventListener("click", () => {
+    modal.style.display = "flex";
+    modalContent.innerHTML = editor.innerHTML;
+  });
+  publishBtn.addEventListener("click", () => {
+    alert("Your blog post has been published!");
+  });
+
+  // Close modal on click outside
+  modal.addEventListener("click", e => {
+    if (e.target === modal) modal.style.display = "none";
+  });
+</script>
+</body>
+  </html>
